@@ -16,9 +16,10 @@
 #include <unistd.h>
 using namespace std;
 #define MASK 0xFFFF000000000000
+#define ULL_MAX 0xFFFFFFFFFFFFFFFF
 
-const char *input_file_path = "hw3example.input";
-const char *output_file_path = "test.output";
+const char *input_file_path = "1.input";
+const char *output_file_path = "result.output";
 const char *storage_path = "./storage";
 
 unsigned long long limit_capacity = 40;
@@ -34,9 +35,7 @@ bool DirectoryExists(unsigned long long key, char **fn) {
         output_data_name += "/" + to_string(key & mask) + extension;
         mask >>= 16;
     }
-
     strcpy(*fn, output_data_name.c_str());
-
     ifstream infile(*fn);
     return infile.good();
 }
@@ -52,7 +51,7 @@ void get_data(unsigned long long key, map<unsigned long long, string> pool) {
             ifstream file;
             file.open(fn);
             file >> value;
-            output_result << value << endl;
+            output_result << value << "\n";
             file.close();
         } else {
             output_result << "EMPTY\n";
@@ -64,8 +63,40 @@ void get_data(unsigned long long key, map<unsigned long long, string> pool) {
 	output_result.close();
 }
 
+void store_data(map<unsigned long long, string>* pool, unsigned long long base_capacity){
+	auto it = pool->begin();
+	unsigned long long idx = 0;
+	while (it != pool->end() && idx < base_capacity) {
+		unsigned long long k = it->first;
+		string value = it->second;
+		unsigned long long mask = MASK;
+		string output_data_name = storage_path;
+
+		for (int i = 0; i < 3; i++) {
+			output_data_name += "/" + to_string(k & mask);
+			const char *f = output_data_name.c_str();
+			DIR *dir = opendir(f);
+			if (!dir) {
+				if (mkdir(f, 0777) != 0) {
+					cout << "Can't create the folder. " << endl;
+				}
+			}
+			mask >>= 16;
+		}
+		output_data_name += "/" + to_string(k & mask) + ".txt";
+		ofstream output_data;
+		output_data.open(output_data_name);
+		output_data << value << endl;
+		output_data.close();
+
+		it++;
+		idx++;
+		pool->erase(k);
+	}
+}
+
 int main() {
-    system("rm -rf ./storage");
+    // system("rm -rf ./storage");
 
     FILE *fp = fopen(input_file_path, "r");
     if (!fp) {
@@ -96,39 +127,9 @@ int main() {
 
                     pool[key] = value;
                     // pool.insert(pair<unsigned long long, string>(lk, v));
-
-                    if (pool.size() > limit_capacity) {
-                        auto it = pool.begin();
-                        unsigned long long idx = 0;
-                        while (it != pool.end() && idx < base_capacity) {
-                            unsigned long long k = it->first;
-                            string value = it->second;
-                            unsigned long long mask = MASK;
-                            string output_data_name = storage_path;
-
-                            for (int i = 0; i < 3; i++) {
-                                output_data_name += "/" + to_string(k & mask);
-                                const char *f = output_data_name.c_str();
-                                ;
-                                DIR *dir = opendir(f);
-                                if (!dir) {
-                                    if (mkdir(f, 0777) != 0) {
-                                        cout << "Can't create the folder. " << endl;
-                                    }
-                                }
-                                mask >>= 16;
-                            }
-                            output_data_name += "/" + to_string(k & mask) + ".txt";
-                            ofstream output_data;
-                            output_data.open(output_data_name);
-                            output_data << value << endl;
-                            output_data.close();
-
-                            it++;
-                            idx++;
-                            pool.erase(k);
-                        }
-                    }
+                    if (pool.size() > limit_capacity) 
+                        store_data(&pool, base_capacity);
+                    
                 } else if (strcmp(ch, "GET") == 0) {
                     unsigned long long key = strtoull(strtok(NULL, " "), NULL, 10);
                     get_data(key, pool);
@@ -143,4 +144,5 @@ int main() {
             run++;
         }
     }
+	store_data(&pool, ULL_MAX);
 }
