@@ -1,0 +1,6 @@
+*.o
+/storage
+main
+compare
+test.*
+.clang-format
