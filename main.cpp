@@ -18,8 +18,6 @@ using namespace std;
 #define MASK 0xFFFF000000000000
 #define ULL_MAX 0xFFFFFFFFFFFFFFFF
 
-const char *input_file_path = "1.input";
-const char *output_file_path = "result.output";
 const char *storage_path = "./storage";
 
 unsigned long long limit_capacity = 40;
@@ -40,7 +38,7 @@ bool DirectoryExists(unsigned long long key, char **fn) {
     return infile.good();
 }
 
-void get_data(unsigned long long key, map<unsigned long long, string> pool) {
+void get_data(unsigned long long key, map<unsigned long long, string> pool, char* output_file_path) {
     ofstream output_result;
     output_result.open(output_file_path, ios::out | ios::app );
     char *fn = (char *)malloc(128 * sizeof(char));
@@ -95,14 +93,21 @@ void store_data(map<unsigned long long, string>* pool, unsigned long long base_c
 	}
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     // system("rm -rf ./storage");
 
-    FILE *fp = fopen(input_file_path, "r");
+    char buf[50];
+    strncpy(buf, argv[1], 50);
+    char *out_file_path = strtok(buf, ".");
+    strcat(out_file_path, ".output");
+
+    // argv[1] is input file path
+    FILE *fp = fopen(argv[1], "r");
     if (!fp) {
         perror("Unable to open file!");
         exit(1);
     }
+
 
     DIR *pDir;
     pDir = opendir(storage_path);
@@ -132,12 +137,12 @@ int main() {
                     
                 } else if (strcmp(ch, "GET") == 0) {
                     unsigned long long key = strtoull(strtok(NULL, " "), NULL, 10);
-                    get_data(key, pool);
+                    get_data(key, pool, out_file_path);
                 } else if (strcmp(ch, "SCAN") == 0) {
                     unsigned long long from = strtoull(strtok(NULL, " "), NULL, 10);
                     unsigned long long to = strtoull(strtok(NULL, " "), NULL, 10);
                     for (unsigned long long key = from; key <= to; key++)
-                        get_data(key, pool);
+                        get_data(key, pool, out_file_path);
                 }
             }
             ch = strtok(NULL, " ");

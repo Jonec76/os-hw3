@@ -1,5 +1,4 @@
 CFLAGS = -B -g -Wall -std=c++11
-CFLAGS += -O2
 CC = g++
 
 .PHONY = clean
